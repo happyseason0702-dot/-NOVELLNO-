@@ -16,13 +16,37 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
+        /* スクロールバー・アニメーションの定義 */
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e5e5; border-radius: 10px; }
+        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        
         button:active { transform: scale(0.96); transition: 0.1s; }
-        body { overscroll-behavior-y: contain; -webkit-tap-highlight-color: transparent; background-color: #f5f5f5; }
-        #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: white; z-index: 1000; font-family: sans-serif; font-weight: bold; color: #666; }
+        
+        body { 
+            overscroll-behavior-y: contain; 
+            -webkit-tap-highlight-color: transparent; 
+            background-color: #f5f5f5;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        
+        #loading { 
+            position: fixed; 
+            inset: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            background: white; 
+            z-index: 1000; 
+            font-weight: bold; 
+            color: #666; 
+        }
+
+        /* iOS Safariのセーフエリア対応 */
+        main { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
 <body>
@@ -30,21 +54,19 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, Fragment } = React;
+        const { useState, useEffect } = React;
 
         // アイコンコンポーネント
         const Icon = ({ name, size = 24, className = "" }) => {
             const icons = {
-                home: <Fragment><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Fragment>,
-                beaker: <Fragment><path d="M4.5 3h15"/><path d="M6 3v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V3"/><path d="M6 14h12"/><path d="M10 3v5"/><path d="M14 3v5"/><path d="M8 8h8"/></Fragment>,
+                home: <React.Fragment><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></React.Fragment>,
+                beaker: <React.Fragment><path d="M4.5 3h15"/><path d="M6 3v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V3"/><path d="M6 14h12"/><path d="M10 3v5"/><path d="M14 3v5"/><path d="M8 8h8"/></React.Fragment>,
                 sparkles: <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>,
-                droplets: <Fragment><path d="m7 16.3c2.2 0 4-1.8 4-4 0-3.3-4-6.3-4-6.3s-4 3-4 6.3c0 2.2 1.8 4 4 4Z"/><path d="m17 18.3c1.7 0 3-1.3 3-3 0-2.5-3-4.8-3-4.8s-3 2.3-3 4.8c0 1.7 1.3 3 3 3Z"/></Fragment>,
+                droplets: <React.Fragment><path d="m7 16.3c2.2 0 4-1.8 4-4 0-3.3-4-6.3-4-6.3s-4 3-4 6.3c0 2.2 1.8 4 4 4Z"/><path d="m17 18.3c1.7 0 3-1.3 3-3 0-2.5-3-4.8-3-4.8s-3 2.3-3 4.8c0 1.7 1.3 3 3 3Z"/></React.Fragment>,
                 check: <polyline points="20 6 9 17 4 12"/>,
-                info: <Fragment><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></Fragment>,
-                refresh: <Fragment><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></Fragment>,
-                book: <Fragment><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></Fragment>,
-                calc: <Fragment><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/></Fragment>,
-                chevron: <polyline points="9 18 15 12 9 6"/>
+                refresh: <React.Fragment><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></React.Fragment>,
+                book: <React.Fragment><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></React.Fragment>,
+                calc: <React.Fragment><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/></React.Fragment>
             };
             return (
                 <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -77,8 +99,8 @@
                     MO: { name: 'MO (モイスト)', desc: 'なめらか。潤いあふれる仕上がりに。', color: 'bg-slate-50 border-slate-200 text-slate-700' },
                 },
                 outbath: {
-                    BE: { name: 'ブーストエマルジョン', desc: 'ドライヤーの熱から守り、髪の密度を高める。', color: 'bg-rose-50 border-rose-200 text-rose-700' },
-                    PO: { name: 'プロテクションオイル', desc: '熱から守り、ツヤと指通りをアップ。', color: 'bg-yellow-50 border-yellow-200 text-yellow-700' },
+                    BE: { name: 'ブーストエマルジョン', desc: 'ドライヤーの熱から守り、髪の密度としなやかさを高めます。', color: 'bg-rose-50 border-rose-200 text-rose-700' },
+                    PO: { name: 'プロテクションオイル', desc: '熱から守り、ツヤと指通りをアップしたい方へ。', color: 'bg-yellow-50 border-yellow-200 text-yellow-700' },
                 }
             };
 
@@ -100,12 +122,16 @@
                 L: { s: '9mL', e1: '24g', l2: '20mL', c3: '18g', c4: '15g', e5: '2g' }
             };
 
-            const getRec = () => ({
-                sh: products.shampoo[answers.damage] || {},
-                tr: products.treatment[answers.texture] || {},
-                ob: products.outbath[answers.outbath] || {},
-                isKE: answers.damage === 'KE'
-            });
+            const getRecItems = () => {
+                const sh = products.shampoo[answers.damage];
+                const tr = products.treatment[answers.texture];
+                const items = [{ label: 'Shampoo', ...sh }, { label: 'Treatment', ...tr }];
+                if (answers.damage === 'KE') {
+                    if (answers.outbath === 'BE') items.push({ label: 'Outbath', ...products.outbath['BE'] });
+                    else { items.push({ label: 'Outbath (1)', ...products.outbath['BE'] }); items.push({ label: 'Outbath (2)', ...products.outbath['PO'] }); }
+                } else { items.push({ label: 'Outbath', ...products.outbath[answers.outbath] }); }
+                return items;
+            };
 
             return (
                 <div className="h-screen w-full flex items-center justify-center p-2">
@@ -125,23 +151,17 @@
                             {mode === 'menu' && (
                                 <div className="flex-1 flex flex-col justify-center gap-4 animate-fade-in">
                                     <div className="text-center mb-6">
-                                        <div className="inline-block p-4 bg-neutral-100 rounded-full mb-4">
-                                            <Icon name="sparkles" size={32} className="text-neutral-400" />
+                                        <div className="inline-block p-4 bg-neutral-100 rounded-full mb-4 text-neutral-400">
+                                            <Icon name="sparkles" size={32} />
                                         </div>
-                                        <h2 className="text-2xl font-bold italic">Menu</h2>
+                                        <h2 className="text-2xl font-bold italic text-neutral-800">Concierge Menu</h2>
                                     </div>
-                                    <button onClick={() => {setMode('home'); setStep('intro')}} className="p-6 bg-white border-2 border-neutral-100 rounded-3xl flex items-center justify-between shadow-sm active:border-neutral-900 transition-all text-left">
-                                        <div>
-                                            <div className="text-lg font-bold">ホームケア診断</div>
-                                            <div className="text-xs text-neutral-500">最適な商品を提案</div>
-                                        </div>
+                                    <button onClick={() => {setMode('home'); setStep('intro')}} className="p-6 bg-white border-2 border-neutral-100 rounded-3xl flex items-center justify-between shadow-sm active:border-neutral-900 transition-all">
+                                        <div className="text-left"><div className="text-lg font-bold">ホームケア診断</div><div className="text-xs text-neutral-500">最適な商品を提案</div></div>
                                         <div className="p-3 bg-neutral-50 rounded-2xl"><Icon name="home" /></div>
                                     </button>
-                                    <button onClick={() => {setMode('salon'); setSalonTab('steps')}} className="p-6 bg-white border-2 border-neutral-100 rounded-3xl flex items-center justify-between shadow-sm active:border-neutral-900 transition-all text-left">
-                                        <div>
-                                            <div className="text-lg font-bold">サロンケアガイド</div>
-                                            <div className="text-xs text-neutral-500">施術工程と使用量</div>
-                                        </div>
+                                    <button onClick={() => {setMode('salon'); setSalonTab('steps')}} className="p-6 bg-white border-2 border-neutral-100 rounded-3xl flex items-center justify-between shadow-sm active:border-neutral-900 transition-all">
+                                        <div className="text-left"><div className="text-lg font-bold">サロンケアガイド</div><div className="text-xs text-neutral-500">施術工程と使用量</div></div>
                                         <div className="p-3 bg-neutral-50 rounded-2xl"><Icon name="beaker" /></div>
                                     </button>
                                 </div>
@@ -156,16 +176,15 @@
                                             <button onClick={() => setStep('q1')} className="w-full py-4 bg-neutral-900 text-white rounded-2xl font-bold shadow-lg">診断をはじめる</button>
                                         </div>
                                     ) : step === 'result' ? (
-                                        <div className="space-y-4 pb-10">
+                                        <div className="space-y-4 pb-10 animate-fade-in">
                                             <div className="text-center"><Icon name="check" size={48} className="text-green-500 mx-auto" /><h2 className="text-2xl font-bold">診断結果</h2></div>
-                                            {[getRec().sh, getRec().tr, getRec().ob].map((item, i) => (
-                                                <div key={i} className={`p-4 border-l-4 rounded-r-xl ${item.color} shadow-sm animate-fade-in`}>
-                                                    <div className="text-[10px] font-bold opacity-50 mb-1 uppercase tracking-tighter">{i===0?'Shampoo':i===1?'Treatment':'Outbath'}</div>
+                                            {getRecItems().map((item, i) => (
+                                                <div key={i} className={`p-4 border-l-4 rounded-r-xl ${item.color} shadow-sm`}>
+                                                    <div className="text-[10px] font-bold opacity-50 mb-1 uppercase tracking-tighter">{item.label}</div>
                                                     <div className="text-lg font-bold">{item.name}</div>
-                                                    <p className="text-xs mt-1">{item.desc}</p>
+                                                    <p className="text-xs mt-1 leading-relaxed">{item.desc}</p>
                                                 </div>
                                             ))}
-                                            {getRec().isKE && <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl text-indigo-800 flex gap-3 text-xs leading-relaxed"><Icon name="info" size={20} className="shrink-0"/><p><b>KE</b>の方はトリートメント時に<b>ブーストエマルジョン</b>を混ぜて使うのがおすすめです。</p></div>}
                                             <button onClick={() => setStep('intro')} className="w-full py-4 border-2 border-neutral-100 rounded-2xl text-neutral-400 font-bold flex items-center justify-center gap-2 mt-4 active:bg-neutral-50"><Icon name="refresh" size={16}/> 最初からやり直す</button>
                                         </div>
                                     ) : (
@@ -177,7 +196,7 @@
                                                   [{id:'BE',l:'密度・しなやかさ'},{id:'PO',l:'ツヤ・指通り'}]).map(o => (
                                                     <button key={o.id} onClick={() => {
                                                         const key = step==='q1'?'damage':step==='q2'?'texture':'outbath';
-                                                        setAnswers(prev => ({...prev, [key]: o.id}));
+                                                        setAnswers({...answers, [key]: o.id});
                                                         setStep(step==='q1'?'q2':step==='q2'?'q3':'result');
                                                     }} className="p-5 border-2 border-neutral-100 rounded-2xl bg-white text-left font-bold shadow-sm active:border-neutral-900 transition-all">{o.l}</button>
                                                 ))}
@@ -196,36 +215,18 @@
                                     {salonTab === 'steps' ? (
                                         <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar pb-10">
                                             {salonSteps.map((s, i) => (
-                                                <div key={i} className="flex gap-4 items-start bg-neutral-50 p-3 rounded-xl">
-                                                    <div className="w-7 h-7 rounded-full bg-neutral-900 text-white text-[10px] flex items-center justify-center font-bold shrink-0 mt-0.5">{i+1}</div>
-                                                    <div className="text-left">
-                                                        <div className="font-bold text-sm">{s.t}</div>
-                                                        <div className="text-[10px] text-neutral-500 mt-1">{s.d}</div>
-                                                    </div>
+                                                <div key={i} className="flex gap-4">
+                                                    <div className="w-7 h-7 rounded-full bg-neutral-900 text-white text-[10px] flex items-center justify-center font-bold shrink-0">{i+1}</div>
+                                                    <div className="text-left font-bold text-sm pt-0.5">{s.t}</div>
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
                                         <div className="space-y-6">
-                                            <div className="flex justify-between items-center px-2">
-                                                <h3 className="font-bold">長さ選択</h3>
-                                                <div className="flex bg-neutral-100 p-1 rounded-xl">
-                                                    {['S','M','L'].map(l => <button key={l} onClick={()=>setLength(l)} className={`w-10 h-10 rounded-lg text-xs font-bold transition-all ${length===l?'bg-neutral-900 text-white shadow-lg':'text-neutral-400'}`}>{l}</button>)}
-                                                </div>
-                                            </div>
+                                            <div className="flex justify-between items-center px-2"><h3 className="font-bold">長さ選択</h3><div className="flex bg-neutral-100 p-1 rounded-xl">{['S','M','L'].map(l => <button key={l} onClick={()=>setLength(l)} className={`w-10 h-10 rounded-lg text-xs font-bold transition-all ${length===l?'bg-neutral-900 text-white shadow-lg':'text-neutral-400'}`}>{l}</button>)}</div></div>
                                             <div className="bg-neutral-900 rounded-3xl p-6 text-white space-y-4 shadow-xl">
-                                                {Object.entries({
-                                                    'シャンプー': dosage[length].s, 
-                                                    '1stエマルジョン': dosage[length].e1, 
-                                                    '2ndローション': dosage[length].l2, 
-                                                    '3rdクリーム': dosage[length].c3, 
-                                                    '4thクリーム': dosage[length].c4, 
-                                                    '5thエマルジョン': dosage[length].e5
-                                                }).map(([k,v], i) => (
-                                                    <div key={i} className="flex justify-between items-center border-b border-white/10 pb-2">
-                                                        <span className="text-[10px] opacity-50 uppercase">{k}</span>
-                                                        <span className="font-bold text-yellow-400 text-lg">{v}</span>
-                                                    </div>
+                                                {Object.entries({シャンプー:dosage[length].s, '1stエマルジョン':dosage[length].e1, '2ndローション':dosage[length].l2, '3rdクリーム':dosage[length].c3, '4thクリーム':dosage[length].c4, '5thエマルジョン':dosage[length].e5}).map(([k,v], i) => (
+                                                    <div key={i} className="flex justify-between items-center border-b border-white/10 pb-2"><span className="text-xs opacity-50 uppercase">{k}</span><span className="font-bold text-yellow-400 text-lg">{v}</span></div>
                                                 ))}
                                             </div>
                                             <p className="text-[10px] text-neutral-400 text-center leading-relaxed italic">※目安量です。髪の状態に合わせて調整してください。</p>
@@ -234,7 +235,7 @@
                                 </div>
                             )}
                         </main>
-                        <footer className="p-4 bg-neutral-50 text-[10px] text-center text-neutral-400 shrink-0 italic">Supported by MIAN NOVELLNO</footer>
+                        <footer className="p-4 bg-neutral-50 text-[10px] text-center text-neutral-400 shrink-0 italic">Supported by Gemini | MIAN NOVELLNO</footer>
                     </div>
                 </div>
             );
