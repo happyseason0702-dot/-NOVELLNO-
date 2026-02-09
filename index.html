@@ -33,6 +33,7 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
+        // アイコン描画
         const Icon = ({ name, size = 24, className = "" }) => {
             const icons = {
                 home: <React.Fragment><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></React.Fragment>,
@@ -100,14 +101,31 @@
                 L: { s: '9mL', e1: '24g', l2: '20mL', c3: '18g', c4: '15g', e5: '2g' }
             };
 
+            const selectAnswer = (key, val) => {
+                const newAnswers = { ...answers, [key]: val };
+                setAnswers(newAnswers);
+                if (key === 'damage') setStep('q2');
+                else if (key === 'texture') setStep('q3');
+                else setStep('result');
+            };
+
             const getRecItems = () => {
-                const sh = products.shampoo[answers.damage];
-                const tr = products.treatment[answers.texture];
-                const items = [{ label: 'Shampoo', ...sh }, { label: 'Treatment', ...tr }];
+                const sh = products.shampoo[answers.damage] || products.shampoo.SI;
+                const tr = products.treatment[answers.texture] || products.treatment.SM;
+                const items = [
+                    { label: 'Shampoo', ...sh },
+                    { label: 'Treatment', ...tr }
+                ];
                 if (answers.damage === 'KE') {
-                    if (answers.outbath === 'BE') items.push({ label: 'Outbath', ...products.outbath['BE'] });
-                    else { items.push({ label: 'Outbath (1)', ...products.outbath['BE'] }); items.push({ label: 'Outbath (2)', ...products.outbath['PO'] }); }
-                } else { items.push({ label: 'Outbath', ...products.outbath[answers.outbath] }); }
+                    if (answers.outbath === 'BE') {
+                        items.push({ label: 'Outbath', ...products.outbath['BE'] });
+                    } else {
+                        items.push({ label: 'Outbath (1)', ...products.outbath['BE'] });
+                        items.push({ label: 'Outbath (2)', ...products.outbath['PO'] });
+                    }
+                } else if (answers.outbath) {
+                    items.push({ label: 'Outbath', ...products.outbath[answers.outbath] });
+                }
                 return items;
             };
 
@@ -117,7 +135,7 @@
                         
                         <header className="bg-neutral-900 text-white p-6 pb-8 text-center relative shrink-0 pt-10">
                             {mode !== 'menu' && (
-                                <button onClick={() => setMode('menu')} className="absolute left-6 top-10 text-white/50 flex items-center gap-1 text-sm active:text-white">
+                                <button onClick={() => {setMode('menu'); setStep('intro')}} className="absolute left-6 top-10 text-white/50 flex items-center gap-1 text-sm active:text-white">
                                     <Icon name="home" size={16} /> 戻る
                                 </button>
                             )}
@@ -157,7 +175,7 @@
                                         <div className="space-y-4 pb-10 animate-fade-in">
                                             <div className="text-center"><Icon name="check" size={48} className="text-green-500 mx-auto" /><h2 className="text-2xl font-bold">診断結果</h2></div>
                                             {getRecItems().map((item, i) => (
-                                                <div key={i} className={`p-4 border-l-4 rounded-r-xl ${item.color} shadow-sm`}>
+                                                <div key={i} className={`p-4 border-l-4 rounded-r-xl ${item.color} shadow-sm animate-fade-in`}>
                                                     <div className="text-[10px] font-bold opacity-50 mb-1 uppercase tracking-tighter">{item.label}</div>
                                                     <div className="text-lg font-bold">{item.name}</div>
                                                     <p className="text-xs mt-1 leading-relaxed">{item.desc}</p>
@@ -169,14 +187,27 @@
                                         <div className="space-y-6">
                                             <h2 className="text-xl font-bold">{step==='q1'?'今のダメージ状態は？':step==='q2'?'理想の質感は？':'重視したいポイントは？'}</h2>
                                             <div className="grid gap-3">
-                                                {(step==='q1'?[{id:'SI',l:'ローダメージ'},{id:'CO',l:'ミドルダメージ'},{id:'KE',l:'ハイダメージ'}]:
-                                                  step==='q2'?[{id:'SM',l:'サラサラ'},{id:'SL',l:'しなやか'},{id:'MO',l:'なめらか'}]:
-                                                  [{id:'BE',l:'密度・しなやかさ'},{id:'PO',l:'ツヤ・指通り'}]).map(o => (
-                                                    <button key={o.id} onClick={() => {
-                                                        const key = step==='q1'?'damage':step==='q2'?'texture':'outbath';
-                                                        setAnswers({...answers, [key]: o.id});
-                                                        setStep(step==='q1'?'q2':step==='q2'?'q3':'result');
-                                                    }} className="p-5 border-2 border-neutral-100 rounded-2xl bg-white text-left font-bold active:border-neutral-900 transition-all">{o.l}</button>
+                                                {step === 'q1' && [
+                                                    { id: 'SI', l: 'ローダメージ' },
+                                                    { id: 'CO', l: 'ミドルダメージ' },
+                                                    { id: 'KE', l: 'ハイダメージ' }
+                                                ].map(o => (
+                                                    <button key={o.id} onClick={() => selectAnswer('damage', o.id)} className="p-5 border-2 border-neutral-100 rounded-2xl bg-white text-left font-bold shadow-sm active:border-neutral-900 transition-all">{o.l}</button>
+                                                ))}
+
+                                                {step === 'q2' && [
+                                                    { id: 'SM', l: '軽やかでサラサラな髪' },
+                                                    { id: 'SL', l: 'しなやかでまとまりのある髪' },
+                                                    { id: 'MO', l: 'なめらかで潤いのある髪' }
+                                                ].map(o => (
+                                                    <button key={o.id} onClick={() => selectAnswer('texture', o.id)} className="p-5 border-2 border-neutral-100 rounded-2xl bg-white text-left font-bold shadow-sm active:border-neutral-900 transition-all">{o.l}</button>
+                                                ))}
+
+                                                {step === 'q3' && [
+                                                    { id: 'BE', l: '密度・しなやかさ' },
+                                                    { id: 'PO', l: 'ツヤ・指通り' }
+                                                ].map(o => (
+                                                    <button key={o.id} onClick={() => selectAnswer('outbath', o.id)} className="p-5 border-2 border-neutral-100 rounded-2xl bg-white text-left font-bold shadow-sm active:border-neutral-900 transition-all">{o.l}</button>
                                                 ))}
                                             </div>
                                         </div>
@@ -193,20 +224,30 @@
                                     {salonTab === 'steps' ? (
                                         <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar pb-10">
                                             {salonSteps.map((s, i) => (
-                                                <div key={i} className="flex gap-4">
-                                                    <div className="w-8 h-8 rounded-full bg-neutral-900 text-white text-[10px] flex items-center justify-center font-bold shrink-0">{i+1}</div>
-                                                    <div className="text-left pb-4 border-b border-neutral-50 last:border-0 w-full">
+                                                <div key={i} className="flex gap-4 animate-fade-in">
+                                                    <div className="flex flex-col items-center shrink-0">
+                                                        <div className="w-8 h-8 rounded-full bg-neutral-900 text-white text-[10px] flex items-center justify-center font-bold shrink-0">{i+1}</div>
+                                                        {i < salonSteps.length - 1 && <div className="w-px h-full bg-neutral-100 my-1"></div>}
+                                                    </div>
+                                                    <div className="text-left pb-4">
                                                         <div className="font-bold text-sm text-neutral-800 leading-tight">{s.t}</div>
-                                                        <div className="text-[11px] text-neutral-500 mt-1.5 leading-relaxed">{s.d}</div>
+                                                        <div className="text-[11px] text-neutral-500 mt-1 leading-relaxed">{s.d}</div>
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="space-y-6">
-                                            <div className="flex justify-between items-center px-2"><h3 className="font-bold text-sm">長さ選択</h3><div className="flex bg-neutral-100 p-1 rounded-xl">{['S','M','L'].map(l => <button key={l} onClick={()=>setLength(l)} className={`w-10 h-10 rounded-lg text-xs font-bold transition-all ${length===l?'bg-neutral-900 text-white shadow-lg':'text-neutral-400'}`}>{l}</button>)}</div></div>
+                                        <div className="space-y-6 animate-fade-in">
+                                            <div className="flex justify-between items-center px-2"><h3 className="font-bold text-sm text-neutral-800">長さ選択</h3><div className="flex bg-neutral-100 p-1 rounded-xl">{['S','M','L'].map(l => <button key={l} onClick={()=>setLength(l)} className={`w-10 h-10 rounded-lg text-xs font-bold transition-all ${length===l?'bg-neutral-900 text-white shadow-lg':'text-neutral-400'}`}>{l}</button>)}</div></div>
                                             <div className="bg-neutral-900 rounded-3xl p-6 text-white space-y-4 shadow-xl">
-                                                {Object.entries({シャンプー:dosage[length].s, '1stエマルジョン':dosage[length].e1, '2ndローション':dosage[length].l2, '3rdクリーム':dosage[length].c3, '4thクリーム':dosage[length].c4, '5thエマルジョン':dosage[length].e5}).map(([k,v], i) => (
+                                                {Object.entries({
+                                                    'シャンプー': dosage[length].s, 
+                                                    '1stエマルジョン': dosage[length].e1, 
+                                                    '2ndローション': dosage[length].l2, 
+                                                    '3rdクリーム': dosage[length].c3, 
+                                                    '4thクリーム': dosage[length].c4, 
+                                                    '5thエマルジョン': dosage[length].e5
+                                                }).map(([k,v], i) => (
                                                     <div key={i} className="flex justify-between items-center border-b border-white/10 pb-2"><span className="text-[10px] opacity-50 uppercase font-bold">{k}</span><span className="font-bold text-yellow-400 text-lg">{v}</span></div>
                                                 ))}
                                             </div>
@@ -216,7 +257,7 @@
                                 </div>
                             )}
                         </main>
-                        <footer className="p-4 bg-neutral-50 text-[10px] text-center text-neutral-400 shrink-0 italic uppercase tracking-widest font-medium">MIAN NOVELLNO</footer>
+                        <footer className="p-4 bg-neutral-50 text-[10px] text-center text-neutral-400 shrink-0 italic font-medium tracking-widest uppercase">Supported by MIAN NOVELLNO</footer>
                     </div>
                 </div>
             );
